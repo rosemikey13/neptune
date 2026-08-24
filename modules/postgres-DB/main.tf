@@ -105,6 +105,9 @@ resource "azurerm_postgresql_flexible_server" "application_db_server" {
   provisioner "local-exec" {
     command = "echo 'DB_PASSWORD: ${self.administrator_password}' >> ansible/${var.application_name}/vars/db_vars.yaml"
   }
+ provisioner "local-exec" {
+    command = "echo 'DB_HOST: ${azurerm_private_dns_zone_virtual_network_link.application_db_private_dns_zone_virtual_network_link.name}' >> ansible/${var.application_name}/vars/db_vars.yaml"
+  }
 
    depends_on = [azurerm_private_dns_zone_virtual_network_link.application_db_private_dns_zone_virtual_network_link]
 }

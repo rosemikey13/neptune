@@ -1,4 +1,3 @@
----
 - name: Wait for server to be ready
   hosts: artifactory
   gather_facts: false
@@ -13,8 +12,6 @@
         search_regex: OpenSSH
         host: '{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}'
     
-
-
 - name: Update apt
   hosts: artifactory
   tasks:
@@ -23,7 +20,6 @@
         update_cache: yes
         cache_valid_time: 4000
       become: yes
-
 
 - name: Download and unpack Artifactory
   hosts: artifactory

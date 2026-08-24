@@ -16,6 +16,14 @@ variable "artifactory_db_subnet_cidr_block" {
   default = "10.0.2.0/24"
 }
 
+variable "gitea_subnet_cidr_block" {
+  default = "10.0.3.0/24"
+}
+
+variable "gitea_db_subnet_cidr_block" {
+  default = "10.0.4.0/24"
+}
+
 variable "linux_admin" {
   default = "neptune-admin"
   sensitive = true
