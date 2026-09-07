@@ -47,10 +47,9 @@ resource "azurerm_network_security_group" "application_network_sg" {
     protocol = "Tcp"
     source_port_range = "*"
     destination_port_range = "*"
-    source_address_prefix = "${coalesce(var.my_ip, length(data.http.public_ip_addr) > 0 ? data.http.public_ip_addr[0].response_body : null)}/32"
+    source_address_prefixes = ["${coalesce(var.my_ip, length(data.http.public_ip_addr) > 0 ? data.http.public_ip_addr[0].response_body : null)}/32", "${var.application_ip}/32"]
     destination_address_prefix = "*"
   }
-
 
   security_rule {
     name = "${var.application_name}-outbound-sr"
@@ -76,7 +75,9 @@ resource "azurerm_linux_virtual_machine" "application_name" {
   name = "${var.application_name}-vm"
   location = var.vn_location
   network_interface_ids = [azurerm_network_interface.application_ni.id]
-  admin_username = var.linux_admin
+  priority = "Spot"
+  eviction_policy = "Deallocate"
+  admin_username = var.linux_admin  
   size = "Standard_D4alds_v7"
 
 
@@ -98,7 +99,7 @@ resource "azurerm_linux_virtual_machine" "application_name" {
   }
 
   provisioner "local-exec" {
-    command = "echo [${var.application_name}] > ansible/hosts"
+    command = "echo [${var.application_name}] >> ansible/hosts"
   }
 
   provisioner "local-exec" {
@@ -109,4 +110,25 @@ resource "azurerm_linux_virtual_machine" "application_name" {
    command = "echo '\n[${var.application_name}:vars]\nansible_ssh_private_key_file=/home/michael/.ssh/id_rsa\nansible_user=${var.linux_admin}\nansible_ssh_common_args=-o StrictHostKeyChecking=no\nansible_python_interpreter=/usr/bin/python3'>> ansible/hosts"
   }
 
+    provisioner "local-exec" {
+    command = "echo 'DB_USER: ${var.psql_admin}' > ansible/db_vars.yaml"
+  }
+
+  provisioner "local-exec" {
+    command = "echo 'DB_PASSWORD: ${var.psql_password}' >> ansible/db_vars.yaml"
+  }
+
+  provisioner "local-exec" {
+    command = "echo 'DB_IP: ${azurerm_network_interface.application_ni.private_ip_address}' >> ansible/db_vars.yaml"
+  }
+
+  provisioner "local-exec" {
+    command = "echo 'DB_NAME: ${var.db_name}' >> ansible/db_vars.yaml"
+  }
+
+  provisioner "local-exec" {
+    command = "echo 'ADMIN_IP: ${coalesce(var.my_ip, length(data.http.public_ip_addr) > 0 ? data.http.public_ip_addr[0].response_body : null)}/32' >> ansible/db_vars.yaml"
+  }
+
 }
+

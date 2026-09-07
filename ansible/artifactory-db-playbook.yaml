@@ -1,0 +1,239 @@
+- name: Wait for server to be ready
+  hosts: artifactoryDB
+  gather_facts: false
+  vars:
+    ansible_connection: local
+  tasks:
+    - name: Wait for ssh port open
+      ansible.builtin.wait_for:
+        port: 22
+        delay: 15
+        timeout: 75
+        search_regex: OpenSSH
+        host: '{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}'
+
+- name: Download apt packages
+  hosts: artifactoryDB
+  tasks:
+    - name: Install prerequisite tools
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 4000
+        name:
+          - "curl"
+          - "acl"
+          - "ca-certificates"
+          - "libpq-dev"
+          - "python3-pip"
+          - "python3-venv"
+          - "python3-setuptools"
+      become: yes
+    
+    - name: Initialize postgres repo
+      ansible.builtin.command:
+        cmd: install -d /usr/share/postgresql-common/pgdg
+      become: yes
+
+    - name: Get postgres repo files
+      ansible.builtin.command:
+        cmd: curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
+      become: yes
+
+    - name: Copy repo config file
+      ansible.builtin.copy:
+        src: artifactoryDB/misc/pgdg.sources
+        dest: /etc/apt/sources.list.d/pgdg.sources
+      become: yes
+
+    - name: Install Postgres 16
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 4000
+        name:
+          - "postgresql-16"
+      become: yes
+
+- name: Create Postgres TLS certificates
+  hosts: artifactoryDB
+  vars_files:
+    - db_vars.yaml
+  tasks:
+
+    - name: Create SAN config file
+      ansible.builtin.command:
+        chdir: /var/lib/postgresql/16/main
+        cmd: touch server.cnf
+      become: yes
+
+    - name: Set artifactory environment variables
+      ansible.builtin.blockinfile:
+        path: /var/lib/postgresql/16/main/server.cnf
+        block: |
+          [req]
+          distinguished_name = req_distinguished_name
+          req_extensions = req_ext
+          prompt = no
+
+          [req_distinguished_name]
+          C = US
+          O = Neptune
+          CN = {{DB_IP}}
+          [req_ext]
+          subjectAltName = @alt_names
+
+          [alt_names]
+          IP.1 = {{DB_IP}}
+        insertafter: EOF
+        prepend_newline: true
+      become: yes
+    
+    - name: Copy CA SSL config file
+      ansible.builtin.copy:
+        dest: /var/lib/postgresql/16/main/openssl.cnf
+        src: artifactoryDB/misc/openssl.cnf
+      become: yes
+    
+    - name: Replace hostname in config file
+      ansible.builtin.lineinfile:
+        line: commonName                      = {{DB_IP}}
+        search_string: commonName
+        path: /var/lib/postgresql/16/main/openssl.cnf
+      become: yes
+
+    - name: Create rootCA key
+      ansible.builtin.command:
+        chdir: /var/lib/postgresql/16/main
+        cmd: openssl genrsa  -out rootCA.key 4096
+      become: yes
+
+    - name: Change root key permissions
+      ansible.builtin.file:
+        path: /var/lib/postgresql/16/main/rootCA.key
+        mode: og-rwx
+        owner: postgres
+      become: yes
+
+    - name: Create rootCA certificate
+      ansible.builtin.command:
+        chdir: /var/lib/postgresql/16/main
+        cmd: openssl req -new -x509 -days 3650 -config openssl.cnf -key rootCA.key -out rootCA.crt
+      become: yes
+    
+    - name: Create server key
+      ansible.builtin.command:
+        chdir: /var/lib/postgresql/16/main
+        cmd: openssl genrsa  -out server.key 4096
+      become: yes
+    
+    - name: Change server key permissions
+      ansible.builtin.file:
+        path: /var/lib/postgresql/16/main/server.key
+        mode: og-rwx
+        owner: postgres
+      become: yes
+    
+    - name: Create server CSR
+      ansible.builtin.command:
+        chdir: /var/lib/postgresql/16/main
+        cmd: openssl req -new -key server.key -out server.csr -config server.cnf
+      become: yes
+
+    
+    - name: Sign root CSR / Create root certificate
+      ansible.builtin.command:
+        chdir: /var/lib/postgresql/16/main
+        cmd: openssl x509 -req -in server.csr -days 3650 -CA rootCA.crt -CAkey rootCA.key -CAcreateserial -out server.crt -extensions req_ext -extfile server.cnf
+      become: yes
+    
+    - name: Convert crt into pem file
+      ansible.builtin.command:
+        chdir: /var/lib/postgresql/16/main
+        cmd: openssl x509 -in rootCA.crt -out combined.pem -outform PEM
+      become: yes
+    
+- name: Setup CA and TLS certificates
+  hosts: artifactoryDB
+  tasks:
+  - name: Copy pem file to local
+    ansible.builtin.fetch:
+      src: /var/lib/postgresql/16/main/combined.pem
+      dest: artifactory/misc/combined.pem
+      flat: true
+    become: yes
+
+- name: Configure Postgres
+  hosts: artifactoryDB
+  vars_files:
+    - db_vars.yaml
+  tasks:
+    - name: Configure Postgres listen addresses
+      ansible.builtin.lineinfile:
+        line: listen_addresses = '*'
+        search_string: listen_addresses
+        path: /etc/postgresql/16/main/postgresql.conf
+      become: yes
+    
+    - name: Configure Postgres listen addresses
+      ansible.builtin.lineinfile:
+        line: ssl_cert_file = '/var/lib/postgresql/16/main/server.crt'
+        search_string: ssl_cert_file
+        path: /etc/postgresql/16/main/postgresql.conf
+      become: yes
+    
+    - name: Configure Postgres listen addresses
+      ansible.builtin.lineinfile:
+        line: ssl_key_file = '/var/lib/postgresql/16/main/server.key'
+        search_string: ssl_key_file
+        path: /etc/postgresql/16/main/postgresql.conf
+      become: yes
+    
+    - name: Add Postgres connection info
+      ansible.builtin.lineinfile:
+        line: "host {{DB_NAME}} {{DB_USER}} {{APP_IP}} md5"
+        insertafter: local   all
+        path: /etc/postgresql/16/main/pg_hba.conf
+      become: yes
+
+    - name: restart Postgres
+      ansible.builtin.service:
+        enabled: true
+        name: postgresql
+        state: restarted
+      become: yes
+    
+    - name: Install python dependencies
+      ansible.builtin.pip:
+        name: "psycopg2-binary"
+        virtualenv: /opt/artifactorypython/venv
+        virtualenv_command: "python3 -m venv"
+      become: yes
+    
+    - name: Create DB User
+      become: yes
+      become_user: postgres
+      vars:
+        ansible_python_interpreter: /opt/artifactorypython/venv/bin/python3
+      community.postgresql.postgresql_user:
+        name: "{{DB_USER}}"
+        password: "{{DB_PASSWORD}}"
+    
+    - name: Initialize DB
+      become: yes
+      become_user: postgres
+      vars:
+        ansible_python_interpreter: /opt/artifactorypython/venv/bin/python3
+      community.postgresql.postgresql_db:
+        owner: "{{DB_USER}}"
+        name: "{{DB_NAME}}"
+        encoding: "UTF8"
+    
+    - name: Grant DB User permissions on artifactory DB
+      become: yes
+      become_user: postgres
+      vars:
+        ansible_python_interpreter: /opt/artifactorypython/venv/bin/python3
+      community.postgresql.postgresql_privs:
+        login_db: "{{DB_NAME}}"
+        roles: "{{DB_USER}}"
+        privs: "ALL"
+        type: "database"

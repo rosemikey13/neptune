@@ -1,3 +1,6 @@
+onemodel:
+  enabled: false
+
 shared:
   database:
     type: postgresql

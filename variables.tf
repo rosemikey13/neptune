@@ -43,3 +43,7 @@ variable "project_path" {
 variable "my_ip" {
   default = ""
 }
+
+variable "op_mode" {
+  default = "budget"
+}
