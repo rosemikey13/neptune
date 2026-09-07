@@ -4,6 +4,9 @@
 ## Project Description
 `Neptune is an Azure-based project that uses terraform for deployment and hosts an Artifactory Docker container repository.`
 
+## Important Notes
+- When using the budget version of the project, be aware that you will have to request a quota increase for 4 spot instance Vcpus in US-East 2. 
+
 ## Technologies Used
 - Terraform
 - Ansible

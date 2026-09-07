@@ -7,3 +7,4 @@ variable "psql_admin" {}
 variable "psql_password" {}
 variable "application_private_ip" {}
 variable "application_name" {}
+variable "db_name" {}

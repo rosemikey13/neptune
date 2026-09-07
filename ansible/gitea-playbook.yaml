@@ -1,0 +1,166 @@
+- name: Wait for server to be ready
+  hosts: gitea
+  gather_facts: false
+  vars:
+    ansible_connection: local
+  tasks:
+    - name: Wait for ssh port open
+      ansible.builtin.wait_for:
+        port: 22
+        delay: 15
+        timeout: 75
+        search_regex: OpenSSH
+        host: '{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}'
+    
+- name: Update apt
+  hosts: gitea
+  tasks:
+    - name: Update apt
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 4000
+      become: yes
+
+- name: Setup Gitea DB
+  hosts: gitea_db
+  tasks:
+    - name: Create Gitea db role
+      community.postgresql.postgresql_user:
+        name: gitea
+        password: "{{GITEA_ROLE_PASS}}"
+        login_db: "{{DB_USER}}"
+        login_password: "{{DB_PASSWORD}}"
+        login_host: "{{DB_HOST}}"
+
+
+
+- name: Download and unpack Gitea
+  hosts: gitea
+  vars_files:
+    - gitea/vars/db_vars.yaml
+    - gitea/vars/playbook_vars.yaml
+  tasks:
+    - name: Make Gitea installation directory
+      ansible.builtin.command:
+        cmd: mkdir /usr/local/gitea
+      become: yes
+    
+    - name: Set Gitea environment variables
+      ansible.builtin.blockinfile:
+        
+        path: ~/.bashrc
+        block: |
+          export DB_USER={{DB_USER}}
+          export DB_PASS={{DB_PASSWORD}}
+          export DB_NAME={{DB_NAME}}
+        insertafter: EOF
+        prepend_newline: true
+      become: yes
+    
+    - name: Get Gitea linux archive
+      ansible.builtin.get_url:
+        dest: /usr/local/gitea/gitea
+        url: https://dl.gitea.com/gitea/1.27.2/gitea-1.27.2-linux-amd64
+        decompress: false
+      become: yes
+
+    - name: Extract archive
+      ansible.builtin.command:
+        chdir: /usr/local/bin/gitea
+        cmd: chmod +x gitea
+      become: yes
+    
+    - name: Create "git" user
+      ansible.builtin.user:
+        name: git
+        group: git
+        shell: /bin/bash
+        home: /home/git
+        comment: 'Git Version Control'
+        system: true
+    
+    - name: Make Gitea application directory
+      ansible.builtin.command:
+        cmd: mkdir -p /var/lib/gitea/{custom,data,log}
+      become: yes
+
+    - name: Set Gitea application directory permissions
+      ansible.builtin.file: 
+        state: directory
+        path: /var/lib/gitea/
+        owner: git
+        group: git
+        mode: '750'
+        recurse: true
+
+    - name: Make Gitea application directory
+      ansible.builtin.command:
+        cmd: mkdir /etc/gitea
+      become: yes
+
+    - name: Set Gitea application directory permissions
+      ansible.builtin.file: 
+        state: directory
+        path: /etc/gitea
+        owner: root
+        group: git
+        mode: '770'
+        recurse: true
+      become: yes
+    
+    - name: Copy Gitea service
+      ansible.builtin.copy:
+        dest: /usr/local/bin/gitea.service
+        src: ./gitea/misc/gitea.service
+    
+    - name: Enable Gitea service
+      ansible.builtin.command:
+        cmd: systemctl enable gitea
+      become: yes 
+    
+    - name: Start Gitea service
+      ansible.builtin.command:
+        cmd: systemctl enable gitea
+      become: yes
+
+    - name: Start Gitea
+      ansible.builtin.command:
+        cmd: GITEA_WORK_DIR=/var/lib/gitea/ /usr/local/bin/gitea web -c /etc/gitea/app.ini
+      become: yes
+
+
+- name: Retrieve DB CA Certs
+  hosts: gitea
+  vars_files:
+    - gitea/vars/db_vars.yaml
+  tasks:
+    - name: Get Microsoft Root CA
+      ansible.builtin.get_url:
+        dest: /usr/local/gitea/microsoft.crt
+        url: 'https://www.microsoft.com/pkiops/certs/Microsoft%20RSA%20Root%20Certificate%20Authority%202017.crt'
+        decompress: false
+      become: yes
+
+    - name: Get DigiCert Root CA
+      ansible.builtin.get_url:
+        dest: /usr/local/gitea/digicert.crt.pem
+        url: 'https://cacerts.digicert.com/DigiCertGlobalRootG2.crt.pem'
+        decompress: false
+      become: yes
+    
+    - name: Convert Microsoft crt 
+      ansible.builtin.command:
+        chdir: /usr/local/gitea
+        cmd: openssl x509 -inform DER -in microsoft.crt -out microsoft.pem -outform PEM
+      become: yes
+    
+    - name: Create combined.pem
+      ansible.builtin.command:
+        cmd: touch /usr/local/gitea/combined.pem
+      become: yes
+
+    - name: Combine pem 
+      ansible.builtin.shell:
+        chdir: /usr/local/gitea
+        cmd: cat digicert.crt.pem > combined.pem && cat microsoft.pem >> combined.pem
+      become: yes

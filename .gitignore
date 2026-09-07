@@ -1,8 +1,10 @@
-.terraform.*
-terraform.tfstate
-terraform.tfstate.backup
-terraform.tfvars
-.terraform/*
+**/.terraform.*
+**/terraform.tfstate
+**/terraform.tfstate.backup
+**/terraform.tfvars
+**/.terraform/*
 **/.terraform
-hosts
-ansible/artifactory/vars/*
+**/hosts
+**/ansible/*/vars/*
+**/combined.pem
+**/db_vars.yaml
