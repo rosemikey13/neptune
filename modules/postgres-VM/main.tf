@@ -47,7 +47,7 @@ resource "azurerm_network_security_group" "application_network_sg" {
     protocol = "Tcp"
     source_port_range = "*"
     destination_port_range = "*"
-    source_address_prefixes = ["${coalesce(var.my_ip, length(data.http.public_ip_addr) > 0 ? data.http.public_ip_addr[0].response_body : null)}/32", "${var.application_ip}/32"]
+    source_address_prefixes = ["${coalesce(var.my_ip, length(data.http.public_ip_addr) > 0 ? data.http.public_ip_addr[0].response_body : null)}/32", "${var.application_ip}/32", "127.0.0.1"]
     destination_address_prefix = "*"
   }
 

@@ -1,7 +1,7 @@
-onemodel:
-  enabled: false
-
 shared:
+  extraJavaOpts: "-Xms512m -Xmx2g"
+  jfconnect:
+    enabled: false
   database:
     type: postgresql
     driver: org.postgresql.Driver
