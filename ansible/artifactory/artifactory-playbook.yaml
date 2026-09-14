@@ -24,8 +24,8 @@
 - name: Download and unpack Artifactory
   hosts: artifactory
   vars_files:
-    - db_vars.yaml
-    - artifactory/vars/playbook_vars.yaml
+    - ../artifactoryDB/db_vars.yaml
+    - vars/playbook_vars.yaml
   tasks:
     - name: Make Artifactory installation directory
       ansible.builtin.command:
@@ -60,12 +60,12 @@
 - name: Artifactory DB Setup
   hosts: artifactory
   vars_files:
-    - db_vars.yaml
+    - ../artifactoryDB/db_vars.yaml
   tasks:
 
     - name: Copy pem file
       ansible.builtin.copy:
-        src: artifactory/misc/combined.pem
+        src: ../artifactoryDB/misc/combined.pem
         dest: /usr/local/jfrog/combined.pem
       become: yes
 
@@ -77,7 +77,7 @@
     - name: Copy db_conf file
       ansible.builtin.copy:
         dest: /usr/local/jfrog/db_conf.yaml
-        src: artifactory/db_conf.yaml
+        src: db_conf.yaml
       become: yes
     
     - name: Copy db_conf to system.yaml

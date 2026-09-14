@@ -77,7 +77,7 @@ resource "azurerm_linux_virtual_machine" "application_name" {
   location = var.vn_location
   network_interface_ids = [azurerm_network_interface.application_ni.id]
   admin_username = var.linux_admin
-  size = "Standard_D4alds_v7"
+  size = var.vm_size
 
 
   os_disk {
@@ -98,15 +98,15 @@ resource "azurerm_linux_virtual_machine" "application_name" {
   }
 
   provisioner "local-exec" {
-    command = "echo [${var.application_name}] > ansible/hosts"
+    command = "echo [${var.application_name}] > ansible/${var.application_name}/hosts"
   }
 
   provisioner "local-exec" {
-    command = "echo '${azurerm_public_ip.application_public_ip.ip_address}' >> ansible/hosts"
+    command = "echo '${azurerm_public_ip.application_public_ip.ip_address}' >> ansible/${var.application_name}/hosts"
   }
 
   provisioner "local-exec" {
-   command = "echo '\n[${var.application_name}:vars]\nansible_ssh_private_key_file=/home/michael/.ssh/id_rsa\nansible_user=${var.linux_admin}\nansible_ssh_common_args=-o StrictHostKeyChecking=no\nansible_python_interpreter=/usr/bin/python3'>> ansible/hosts"
+   command = "echo '\n[${var.application_name}:vars]\nansible_ssh_private_key_file=/home/michael/.ssh/id_rsa\nansible_user=${var.linux_admin}\nansible_ssh_common_args=-o StrictHostKeyChecking=no\nansible_python_interpreter=/usr/bin/python3'>> ansible/${var.application_name}/hosts"
   }
 
 }

@@ -5,3 +5,6 @@ variable "application_name" {}
 variable "rg_name" {}
 variable "my_ip" {}
 variable "linux_admin" {}
+variable "vm_size" {
+default = "Standard_D4alds_v7"
+}

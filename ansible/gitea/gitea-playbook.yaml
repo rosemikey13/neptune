@@ -1,0 +1,119 @@
+- name: Wait for server to be ready
+  hosts: gitea
+  gather_facts: false
+  vars:
+    ansible_connection: local
+  tasks:
+    - name: Wait for ssh port open
+      ansible.builtin.wait_for:
+        port: 22
+        delay: 15
+        timeout: 75
+        search_regex: OpenSSH
+        host: '{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}'
+    
+- name: Update apt
+  hosts: gitea
+  tasks:
+    - name: Update apt
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 4000
+        name: acl
+      become: yes
+
+- name: Download and unpack gitea
+  hosts: gitea
+  vars_files:
+    - ../giteaDB/db_vars.yaml
+    - vars/playbook_vars.yaml
+  tasks:
+    - name: Make gitea installation directory
+      ansible.builtin.command:
+        cmd: mkdir -p /usr/local/gitea
+      become: yes
+    
+    - name: Get gitea file
+      ansible.builtin.get_url:
+        dest: /usr/local/bin/gitea
+        url: https://dl.gitea.com/gitea/1.27.3/gitea-1.27.3-linux-amd64
+        mode: '771'
+        decompress: false
+      become: yes
+    
+    - name: Add git user
+      ansible.builtin.user:
+        name: git
+        system: true
+        shell: /bin/bash
+        password: '!'
+        comment: 'Git Version Control'
+      become: yes
+  
+    
+    - name: Create lib custom directory
+      ansible.builtin.file:
+        state: directory
+        path: /var/lib/gitea/custom
+        group: git
+        owner: git
+        mode: '750'
+      become: yes
+    
+    - name: Create lib data directory
+      ansible.builtin.file:
+        state: directory
+        path: /var/lib/gitea/data
+        group: git
+        owner: git
+        mode: '750'
+      become: yes
+    
+    - name: Create lib log directory
+      ansible.builtin.file:
+        state: directory
+        path: /var/lib/gitea/log
+        group: git
+        owner: git
+        mode: '750'
+      become: yes
+
+    - name: Create etc gitea directory
+      ansible.builtin.file:
+        state: directory
+        path: /etc/gitea
+        group: git
+        owner: root
+        mode: '770'
+      become: yes
+
+    - name: Copy gitea service file
+      ansible.builtin.copy:
+       dest: /etc/systemd/system/gitea.service
+       src:  misc/gitea.service
+      become: yes
+
+    - name: Copy ini
+      ansible.builtin.copy:
+       dest: /etc/gitea/app.ini
+       src:  misc/app.ini
+       mode: '770'
+       group: git
+      become: yes
+    
+    - name: Set gitea DB environment variables
+      ansible.builtin.blockinfile:
+        path: /etc/gitea/app.ini
+        block: |
+          HOST = {{DB_ENDPOINT}}:5432
+          PASSWD = '{{DB_PASSWORD}}'
+          USER = {{DB_USER}}
+          NAME = {{DB_NAME}}
+        insertafter: DB_TYPE = postgres
+      become: yes
+      become_user: git
+    
+    - name: Start gitea service
+      ansible.builtin.command:
+        cmd: systemctl enable gitea --now
+      become: yes

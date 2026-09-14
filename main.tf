@@ -27,9 +27,10 @@ resource "azurerm_virtual_network" "neptune_vn" {
   address_space = [var.vn_cidr_block]
 }
 
+
 module "artifactory_vm" {
   source = "./modules/linux-VM"
-  application_name = "artifactory"
+  application_name = var.artifactory_vm_application_name
   application_subnet_cidr_block = var.artifactory_subnet_cidr_block
   linux_admin = var.linux_admin
   rg_name = azurerm_resource_group.neptune_rg.name
@@ -51,14 +52,14 @@ module "artifactory_db" {
   psql_password = var.psql_password
   db_name = "artifactory_db"
   application_private_ip = module.artifactory_vm.application_private_ip_address
-  application_name = "artifactory"
+  application_name = var.artifactory_db_application_name
 }
 
 module "artifactory_db_vm" {
   count = var.op_mode == "budget" ? 1 : 0
   source = "./modules/postgres-VM"
   application_ip = module.artifactory_vm.application_private_ip_address
-  application_name = "artifactoryDB"
+  application_name = var.artifactory_db_application_name
   application_subnet_cidr_block = var.artifactory_db_subnet_cidr_block
   db_name = "artifactory_db"
   my_ip = var.my_ip
@@ -71,17 +72,36 @@ module "artifactory_db_vm" {
   depends_on = [ module.artifactory_vm ]
 }
 
-# module "gitea-vm" {
-#   source = "./modules/linux-VM"
-#   application_name = "gitea"
-#   application_subnet_cidr_block = var.gitea_subnet_cidr_block
-#   linux_admin = var.linux_admin
-#   rg_name = azurerm_resource_group.neptune_rg.name
-#   my_ip = var.my_ip
-#   vn_name = azurerm_virtual_network.neptune_vn.name
-#   vn_location = azurerm_virtual_network.neptune_vn.location
-# }
 
+
+module "gitea_vm" {
+  source = "./modules/linux-VM"
+  application_name = var.gitea_vm_application_name
+  application_subnet_cidr_block = var.gitea_subnet_cidr_block
+  linux_admin = var.linux_admin
+  rg_name = azurerm_resource_group.neptune_rg.name
+  my_ip = var.my_ip
+  vn_name = azurerm_virtual_network.neptune_vn.name
+  vn_location = azurerm_virtual_network.neptune_vn.location
+  vm_size = "Standard_D2alds_v7"
+  depends_on = [ module.artifactory_vm ]
+}
+
+module "gitea_db_vm" {
+  source = "./modules/postgres-VM"
+  application_ip = module.gitea_vm.application_private_ip_address
+  application_name = var.gitea_db_application_name
+  application_subnet_cidr_block = var.gitea_db_subnet_cidr_block
+  db_name = "giteadb"
+  my_ip = var.my_ip
+  linux_admin = var.linux_admin
+  rg_name = azurerm_resource_group.neptune_rg.name
+  vn_location = azurerm_virtual_network.neptune_vn.location
+  vn_name = azurerm_virtual_network.neptune_vn.name
+  psql_admin = var.psql_admin
+  psql_password = var.psql_password
+  depends_on = [ module.gitea_vm ]
+}
 # module "gitea_db" {
 #   source = "./modules/postgres-DB"
 #   vn_id = azurerm_virtual_network.neptune_vn.id
@@ -104,7 +124,7 @@ module "artifactory_db_vm" {
 resource "null_resource" "artifactory_setup" {
   count = var.op_mode == "budget" ? 1 : 0
   provisioner "local-exec" {
-    command = "echo DB_ENDPOINT: ${module.artifactory_db_vm[0].db-vm-private_ip} >> ${var.project_path}/ansible/db_vars.yaml"
+    command = "echo DB_ENDPOINT: ${module.artifactory_db_vm[0].db-vm-private_ip} >> ${var.project_path}/ansible/${var.artifactory_db_application_name}/db_vars.yaml"
   }
   depends_on = [module.artifactory_db, module.artifactory_db_vm[0]]
 }
@@ -112,7 +132,7 @@ resource "null_resource" "artifactory_setup" {
 resource "null_resource" "artifactory_db_setup" {
   count = var.op_mode == "budget" ? 1 : 0
   provisioner "local-exec" {
-    command = "echo APP_IP: ${module.artifactory_vm.application_private_ip_address}/32 >> ${var.project_path}/ansible/db_vars.yaml"
+    command = "echo APP_IP: ${module.artifactory_vm.application_private_ip_address}/32 >> ${var.project_path}/ansible/${var.artifactory_db_application_name}/db_vars.yaml"
   }
   depends_on = [module.artifactory_db, module.artifactory_db_vm[0]]
 }
@@ -121,7 +141,7 @@ resource "null_resource" "artifactory_db_runner" {
   count = var.op_mode == "budget" ? 1 : 0
   depends_on = [module.artifactory_db_vm, null_resource.artifactory_db_setup]
   provisioner "local-exec" {
-    command = "ansible-playbook -i ${var.project_path}/ansible/hosts ${var.project_path}/ansible/artifactory-db-playbook.yaml"
+    command = "ansible-playbook -i ${var.project_path}/ansible/${var.artifactory_db_application_name}/hosts ${var.project_path}/ansible/${var.artifactory_db_application_name}/artifactory-db-playbook.yaml"
   }
 }
 
@@ -129,13 +149,44 @@ resource "null_resource" "artifactory_azure_db_setup" {
   count = var.op_mode == "enterprise" ? 1 : 0
   depends_on = [module.artifactory_db]
   provisioner "local-exec" {
-    command = "ansible-playbook -i ${var.project_path}/ansible/hosts ${var.project_path}/ansible/artifactory-azure-db-playbook.yaml"
+    command = "ansible-playbook -i ${var.project_path}/ansible/${var.artifactory_db_application_name}/hosts ${var.project_path}/ansible/${var.artifactory_db_application_name}/artifactory-azure-db-playbook.yaml"
   }
 }
 
 resource "null_resource" "artifactory_playbook_runner" {
   depends_on = [ module.artifactory_db, module.artifactory_db_vm, module.artifactory_vm, null_resource.artifactory_db_runner, null_resource.artifactory_setup, null_resource.artifactory_azure_db_setup]
   provisioner "local-exec" {
-    command = "ansible-playbook -i ${var.project_path}/ansible/hosts ${var.project_path}/ansible/artifactory-playbook.yaml"
+    command = "ansible-playbook -i ${var.project_path}/ansible/${var.artifactory_vm_application_name}/hosts ${var.project_path}/ansible/${var.artifactory_vm_application_name}/artifactory-playbook.yaml"
+  }
+}
+
+resource "null_resource" "gitea_setup" {
+  count = var.op_mode == "budget" ? 1 : 0
+  provisioner "local-exec" {
+    command = "echo DB_ENDPOINT: ${module.gitea_db_vm.db-vm-private_ip} >> ${var.project_path}/ansible/${var.gitea_db_application_name}/db_vars.yaml"
+  }
+  depends_on = [ module.gitea_db_vm[0]]
+}
+
+resource "null_resource" "gitea_db_setup" {
+  count = var.op_mode == "budget" ? 1 : 0
+  provisioner "local-exec" {
+    command = "echo APP_IP: ${module.gitea_vm.application_private_ip_address}/32 >> ${var.project_path}/ansible/${var.gitea_db_application_name}/db_vars.yaml"
+  }
+  depends_on = [module.gitea_db_vm[0]]
+}
+
+resource "null_resource" "gitea_db_runner" {
+  count = var.op_mode == "budget" ? 1 : 0
+  depends_on = [module.gitea_db_vm[0], null_resource.gitea_db_setup]
+  provisioner "local-exec" {
+    command = "ansible-playbook -i ${var.project_path}/ansible/${var.gitea_db_application_name}/hosts ${var.project_path}/ansible/${var.gitea_db_application_name}/gitea-db-playbook.yaml"
+  }
+}
+
+resource "null_resource" "gitea_playbook_runner" {
+  depends_on = [ module.gitea_db_vm, module.gitea_vm, null_resource.gitea_db_runner, null_resource.gitea_setup]
+  provisioner "local-exec" {
+    command = "ansible-playbook -i ${var.project_path}/ansible/${var.gitea_vm_application_name}/hosts ${var.project_path}/ansible/${var.gitea_vm_application_name}/gitea-playbook.yaml"
   }
 }
