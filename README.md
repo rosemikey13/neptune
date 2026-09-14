@@ -5,7 +5,7 @@
 `Neptune is an Azure-based project that uses terraform for deployment and hosts an Artifactory Docker container repository.`
 
 ## Important Notes
-- When using the budget version of the project, be aware that you will have to request a quota increase for 4 spot instance Vcpus in US-East 2. 
+- When using the budget version of the project, be aware that you will have to request a quota increase for 12 spot instance Vcpus in US-East 2. 
 - On the Artifactory frontend you will periodically see a "Request failed with status code 500" popup. This is expected and can be ignored, it is just the opensource version of JCR trying to license itself, which doesn't work because it is the opensource version.
 
 ## Technologies Used
