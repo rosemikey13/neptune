@@ -13,6 +13,7 @@
 - Ansible
 - Jfrog Artifactory (JCR)
 - Microsoft Azure
+- Gitea
 
 ## Requirements
 - Create or Sign into Azure Account
