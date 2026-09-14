@@ -95,14 +95,14 @@ resource "azurerm_postgresql_flexible_server" "application_db_server" {
 
   
   provisioner "local-exec" {
-    command = "echo 'DB_USER: ${self.administrator_login}' > ansible/db_vars.yaml"
+    command = "echo 'DB_USER: ${self.administrator_login}' > ansible/${var.application_name}/db_vars.yaml"
   }
 
   provisioner "local-exec" {
-    command = "echo 'DB_PASSWORD: ${self.administrator_password}' >> ansible/db_vars.yaml"
+    command = "echo 'DB_PASSWORD: ${self.administrator_password}' >> ansible/${var.application_name}/db_vars.yaml"
   }
  provisioner "local-exec" {
-    command = "echo 'DB_HOST: ${azurerm_private_dns_zone_virtual_network_link.application_db_private_dns_zone_virtual_network_link.name}' >> ansible/db_vars.yaml"
+    command = "echo 'DB_HOST: ${azurerm_private_dns_zone_virtual_network_link.application_db_private_dns_zone_virtual_network_link.name}' >> ansible/${var.application_name}/db_vars.yaml"
   }
 
    depends_on = [azurerm_private_dns_zone_virtual_network_link.application_db_private_dns_zone_virtual_network_link]
@@ -123,11 +123,11 @@ resource "azurerm_postgresql_flexible_server_database" "application_db" {
 
 
   provisioner "local-exec" {
-    command = "echo 'DB_NAME: ${var.db_name}' >> ansible/db_vars.yaml"
+    command = "echo 'DB_NAME: ${var.db_name}' > ansible/${var.application_name}/db_vars.yaml"
   }
 
   provisioner "local-exec" {
-    command = "echo 'DB_ENDPOINT: ${self.name}.postgres.database.azure.com' >> ansible/db_vars.yaml"
+    command = "echo 'DB_ENDPOINT: ${self.name}.postgres.database.azure.com' >> ansible/${var.application_name}/db_vars.yaml"
   }
 
 }

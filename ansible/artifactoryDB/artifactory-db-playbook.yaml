@@ -41,7 +41,7 @@
 
     - name: Copy repo config file
       ansible.builtin.copy:
-        src: artifactoryDB/misc/pgdg.sources
+        src: misc/pgdg.sources
         dest: /etc/apt/sources.list.d/pgdg.sources
       become: yes
 
@@ -90,7 +90,7 @@
     - name: Copy CA SSL config file
       ansible.builtin.copy:
         dest: /var/lib/postgresql/16/main/openssl.cnf
-        src: artifactoryDB/misc/openssl.cnf
+        src: misc/openssl.cnf
       become: yes
     
     - name: Replace hostname in config file
@@ -157,7 +157,7 @@
   - name: Copy pem file to local
     ansible.builtin.fetch:
       src: /var/lib/postgresql/16/main/combined.pem
-      dest: artifactory/misc/combined.pem
+      dest: misc/combined.pem
       flat: true
     become: yes
 
@@ -173,14 +173,14 @@
         path: /etc/postgresql/16/main/postgresql.conf
       become: yes
     
-    - name: Configure Postgres listen addresses
+    - name: Configure Postgres SSL certificate file
       ansible.builtin.lineinfile:
         line: ssl_cert_file = '/var/lib/postgresql/16/main/server.crt'
         search_string: ssl_cert_file
         path: /etc/postgresql/16/main/postgresql.conf
       become: yes
     
-    - name: Configure Postgres listen addresses
+    - name: Configure Postgres server key
       ansible.builtin.lineinfile:
         line: ssl_key_file = '/var/lib/postgresql/16/main/server.key'
         search_string: ssl_key_file

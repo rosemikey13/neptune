@@ -1,8 +1,7 @@
 - name: Retrieve DB CA Certs
   hosts: localhost
   connection: local
-  vars_files:
-    - db_vars.yaml
+  
   tasks:
     - name: Get Microsoft Root CA
       ansible.builtin.get_url:

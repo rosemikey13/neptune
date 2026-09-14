@@ -47,3 +47,19 @@ variable "my_ip" {
 variable "op_mode" {
   default = "budget"
 }
+
+variable "artifactory_vm_application_name" {
+  default = "artifactory"
+}
+
+variable "artifactory_db_application_name" {
+  default = "artifactoryDB"
+}
+
+variable "gitea_vm_application_name" {
+  default = "gitea"
+}
+
+variable "gitea_db_application_name" {
+  default = "giteaDB"
+}
