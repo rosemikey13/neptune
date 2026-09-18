@@ -94,7 +94,7 @@ resource "azurerm_linux_virtual_machine" "application_name" {
     version = "latest"
   }
   admin_ssh_key {
-    public_key = file("/home/michael/.ssh/id_rsa.pub")
+    public_key = file(var.ssh_pub_key_absolute_path)
     username = var.linux_admin
   }
 

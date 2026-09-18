@@ -24,6 +24,10 @@ variable "gitea_db_subnet_cidr_block" {
   default = "10.0.4.0/24"
 }
 
+variable "jenkins_subnet_cidr_block" {
+  default = "10.0.5.0/24"
+}
+
 variable "linux_admin" {
   default = "neptune-admin"
   sensitive = true
@@ -63,3 +67,5 @@ variable "gitea_vm_application_name" {
 variable "gitea_db_application_name" {
   default = "giteaDB"
 }
+
+variable "ssh_pub_key_absolute_path" {}
