@@ -8,3 +8,4 @@ variable "linux_admin" {}
 variable "vm_size" {
 default = "Standard_D4alds_v7"
 }
+variable "ssh_pub_key_absolute_path" {}

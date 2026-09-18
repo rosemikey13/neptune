@@ -9,3 +9,4 @@ variable "application_ip" {}
 variable "psql_admin" {}
 variable "psql_password" {}
 variable "db_name" {}
+variable "ssh_pub_key_absolute_path" {}

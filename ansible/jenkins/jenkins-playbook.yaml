@@ -1,0 +1,70 @@
+- name: Wait for server to be ready
+  hosts: jenkins
+  gather_facts: false
+  vars:
+    ansible_connection: local
+  tasks:
+    - name: Wait for ssh port open
+      ansible.builtin.wait_for:
+        port: 22
+        delay: 15
+        timeout: 75
+        search_regex: OpenSSH
+        host: '{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}'
+    
+- name: Update apt
+  hosts: jenkins
+  tasks:
+    - name: Install jenkins dependencies
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 4000
+        name: [fontconfig, openjdk-21-jre]
+      become: yes
+
+- name: Configure Jenkins repo and install 
+  hosts: jenkins
+  vars_files:
+    - vars/app_vars.yaml
+  tasks:
+    - name: Get jenkins key
+      ansible.builtin.command:
+        cmd: wget -O /etc/apt/keyrings/jenkins-keyring.asc https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key
+      become: yes
+    
+    - name: Add jenkins repo to sources
+      ansible.builtin.shell:
+        cmd: echo "deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc]" https://pkg.jenkins.io/debian-stable binary/ | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
+      become: yes
+    
+    - name: Install jenkins dependencies
+      ansible.builtin.apt:
+        update_cache: yes
+        name: jenkins
+      become: yes
+
+    - name: Start jenkins service
+      ansible.builtin.command:
+        cmd: systemctl enable jenkins --now
+      become: yes
+    
+    - name: Wait for jenkins unlock password
+      ansible.builtin.wait_for:
+        state: present
+        path: /var/lib/jenkins/secrets/initialAdminPassword
+      become: yes
+    
+    - name: Put unlock password in variable
+      ansible.builtin.command:
+        cmd: cat /var/lib/jenkins/secrets/initialAdminPassword
+      register: setup_password
+      become: yes
+    
+    - ansible.builtin.debug:
+        msg:
+        - "**************************************************************************************"
+        - "********************************** ! IMPORTANT ! *************************************"
+        - "********************************* ACTIVATE JENKINS BY ********************************" 
+        - "* Entering this password: '{{setup_password.stdout}}' at http://{{VM_ENDPOINT}}:8080 *"
+        - "**************************************************************************************"
+        - "**************************************************************************************" 

@@ -8,3 +8,5 @@
 **/ansible/*/vars/*
 **/combined.pem
 **/db_vars.yaml
+**/app_vars.yaml
+**/Jenkinsfile
