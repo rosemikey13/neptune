@@ -11,7 +11,47 @@
         timeout: 75
         search_regex: OpenSSH
         host: '{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}'
+
+- name: Create example Jenkinsfile
+  hosts: jenkins
+  vars: 
+    ansible_connection: local
+  vars_files:
+    - ../artifactory/vars/jenkins_vars.yaml
+    - ../gitea/vars/jenkins_vars.yaml
+  tasks:
+    - name: Create file 
+      ansible.builtin.blockinfile:
+        path: misc/Jenkinsfile
+        insertafter: EOF
+        create: true
+        block: |
+          pipeline {
+            agent any
+
+            environment {
+              ARTIFACTORY_IP={{ARTIFACTORY_PRIVATE_IP}}
+              GITEA_IP={{GITEA_PRIVATE_IP}}
+            }
+
+            stages {
+                stage("build") {
+                    steps {
+                
+                    }
+                }
+            }   
     
+            post {
+                success {
+                    echo 'The build was successful'
+                }
+                failure {
+                    echo 'The build has failed'
+                }
+            }
+          }
+
 - name: Update apt
   hosts: jenkins
   tasks:
@@ -47,7 +87,7 @@
       ansible.builtin.command:
         cmd: systemctl enable jenkins --now
       become: yes
-    
+
     - name: Wait for jenkins unlock password
       ansible.builtin.wait_for:
         state: present

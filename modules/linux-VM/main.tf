@@ -98,6 +98,11 @@ resource "azurerm_linux_virtual_machine" "application_name" {
   }
 
   provisioner "local-exec" {
+    command = "echo ${upper(var.application_name)}_PRIVATE_IP: ${azurerm_network_interface.application_ni.private_ip_address} > ansible/${var.application_name}/vars/jenkins_vars.yaml"
+  }
+
+
+  provisioner "local-exec" {
     command = "echo [${var.application_name}] > ansible/${var.application_name}/hosts"
   }
 
