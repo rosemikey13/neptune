@@ -14,6 +14,7 @@
 - Jfrog Artifactory (JCR)
 - Microsoft Azure
 - Gitea
+- Jenkins
 
 ## Requirements
 - Create or Sign into Azure Account
