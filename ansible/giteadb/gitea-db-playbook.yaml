@@ -1,5 +1,5 @@
 - name: Wait for server to be ready
-  hosts: giteaDB
+  hosts: giteadb
   gather_facts: false
   vars:
     ansible_connection: local
@@ -13,7 +13,7 @@
         host: '{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}'
 
 - name: Download apt packages
-  hosts: giteaDB
+  hosts: giteadb
   tasks:
     - name: Install prerequisite tools
       ansible.builtin.apt:
@@ -54,7 +54,7 @@
       become: yes
 
 - name: Configure Postgres
-  hosts: giteaDB
+  hosts: giteadb
   vars_files:
     - db_vars.yaml
   tasks:

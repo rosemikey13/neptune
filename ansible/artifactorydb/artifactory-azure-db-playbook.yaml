@@ -1,0 +1,33 @@
+- name: Retrieve DB CA Certs
+  hosts: localhost
+  connection: local
+  
+  tasks:
+    - name: Get Microsoft Root CA
+      ansible.builtin.get_url:
+        dest: ./misc/microsoft.crt
+        url: 'https://www.microsoft.com/pkiops/certs/Microsoft%20RSA%20Root%20Certificate%20Authority%202017.crt'
+        decompress: false
+
+    - name: Get DigiCert Root CA
+      ansible.builtin.get_url:
+        dest: ./misc/digicert.crt.pem
+        url: 'https://cacerts.digicert.com/DigiCertGlobalRootG2.crt.pem'
+        decompress: false
+
+    
+    - name: Convert Microsoft crt 
+      ansible.builtin.command:
+        chdir: ./misc
+        cmd: openssl x509 -inform DER -in microsoft.crt -out microsoft.pem -outform PEM
+
+    
+    - name: Create combined.pem
+      ansible.builtin.command:
+        cmd: touch ./misc/combined.pem
+ 
+
+    - name: Combine pem 
+      ansible.builtin.shell:
+        chdir: ./misc
+        cmd: cat digicert.crt.pem > combined.pem && cat microsoft.pem >> combined.pem

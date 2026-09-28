@@ -2,11 +2,11 @@
 <center><img src="./assets/neptune.png" width="600" height="600"></center>
 
 ## Project Description
-`Neptune is an Azure-based project that uses terraform for deployment and hosts an Artifactory Docker container repository.`
+Neptune is an Azure-based project that uses terraform for deployment and hosts an Artifactory container repository, a Gitea git repository, and Jenkins for CI/CD.
 
 ## Important Notes
 - When using the budget version of the project, be aware that you will have to request a quota increase for 12 spot instance Vcpus in US-East 2. 
-- On the Artifactory frontend you will periodically see a "Request failed with status code 500" popup. This is expected and can be ignored, it is just the opensource version of JCR trying to license itself, which doesn't work because it is the opensource version.
+
 
 ## Technologies Used
 - Terraform
@@ -30,7 +30,7 @@
 4. Set Terraform variables in example file (`terraform.tfvars.example`)
 **Optional variables have been commented out in the example file, as they do not need to be set**
 
-    - subscription_id <font color="#ee4949">**(Required)**</font> : This is the id of the Azure subscription the created project will be attached to. Run `az account list --output table` and copy the `SubscriptionId` of the subscription you are using for this project.
+    - azure_subscription_id <font color="#ee4949">**(Required)**</font> : This is the id of the Azure subscription the created project will be attached to. Run `az account list --output table` and copy the `SubscriptionId` of the subscription you are using for this project.
     - linux_admin <font color="#eee249">**(Optional)**</font> : The name of the linux administrator account create on the Azure VMs. Defaults to `neptune-admin`.
     - vn_cidr_block <font color="#eee249">**(Optional)**</font> : The CIDR block that the Azure Virtual Network will use. Defaults to `10.0.0.0/16`.
     - artifactory_subnet_cidr_block <font color="#eee249">**(Optional)**</font> : The CIDR block that the Virtual Machine running Artifactory uses. Defaults to `10.0.1.0/24` .
@@ -45,6 +45,8 @@
         - **Non-alphanumeric characters**
     - my_ip_cidr <font color="#eee249">**(Optional)**</font> : The IP address of the machine you will use to access the applications that are deployed. By default terraform will try to find your current IP address automatically.
     - project_path <font color="#eee249">**(Optional)**</font> : The path to the root folder of this project. Defaults to `~/Desktop/neptune`.
+    - ssh_pub_key_absolute_path <font color="#ee4949">**(Required)**</font> : The path on your machine to the ssh public key you want your servers to have. This will allow you to ssh into the azure linux VMs as needed.
+    - op_mode <font color="#ee4949">**(Required)**</font> : The [operation mode](#operation-modes) that the project will be started using.
 
 5. Rename `terraform.tfvars.example` to `terraform.tfvars`
 
@@ -57,4 +59,22 @@
 9. Complete the initial Artifactory setup.
    <font color="#ee4949">**IMPORTANT</font>: The Default username is `admin` and the default password is `password`. MAKE SURE THE DEFAULT PASSWORD IS CHANGED WHEN PROMPTED IN THE INITIAL SETUP.**
 
-10. You now have a Docker container repository that only you can access!
+10. To activate Jenkins look for console output with the following message and follow the instructions: 
+
+        - "**************************************************************************************"
+        - "********************************** ! IMPORTANT ! *************************************"
+        - "********************************* ACTIVATE JENKINS BY ********************************" 
+        - "* Entering this password: '{{setup_password.stdout}}' at http://{{VM_ENDPOINT}}:8080 *"
+        - "**************************************************************************************"
+        - "**************************************************************************************" 
+
+11. You now have a Docker container repository that only you can access!
+
+## Operation Modes
+Neptune can be started in the following operation modes:
+
+- `development`
+    - This mode is useful testing and prototyping ONLY. Development mode leverages azure spot instances for reduced cost and as a result is not ideal for persistent data.
+
+- `regular`
+    - This mode is the default and uses linux virtual machines for hosting the application services and the postgres databases that are needed to run said applications.

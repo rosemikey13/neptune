@@ -1,14 +1,14 @@
 resource "azurerm_subnet" "application_subnet" {
   virtual_network_name = var.vn_name
   name = "${var.application_name}-subnet"
-  address_prefixes =[var.application_subnet_cidr_block]
+  address_prefixes =[var.db_subnet_cidr_block]
   resource_group_name = var.rg_name
 }
 
 resource "azurerm_public_ip" "application_public_ip" {
   location = var.vn_location
   resource_group_name = var.rg_name
-  name = "${var.application_name}-public-ip"
+  name = "${var.application_name}-db-public-ip"
   
   lifecycle {
     create_before_destroy = true
@@ -47,7 +47,7 @@ resource "azurerm_network_security_group" "application_network_sg" {
     protocol = "Tcp"
     source_port_range = "*"
     destination_port_range = "*"
-    source_address_prefixes = ["${coalesce(var.my_ip, length(data.http.public_ip_addr) > 0 ? data.http.public_ip_addr[0].response_body : null)}/32", "${var.application_ip}/32", "127.0.0.1"]
+    source_address_prefixes = ["${coalesce(var.my_ip, length(data.http.public_ip_addr) > 0 ? data.http.public_ip_addr[0].response_body : null)}/32", "${var.application_private_ip}/32", "127.0.0.1"]
     destination_address_prefix = "*"
   }
 
@@ -75,8 +75,8 @@ resource "azurerm_linux_virtual_machine" "application_name" {
   name = "${var.application_name}-vm"
   location = var.vn_location
   network_interface_ids = [azurerm_network_interface.application_ni.id]
-  priority = "Spot"
-  eviction_policy = "Deallocate"
+  priority = var.spot_instance ? "Spot" : "Regular"
+  eviction_policy = var.spot_instance ? "Deallocate" : null
   admin_username = var.linux_admin  
   size = "Standard_D4alds_v7"
 

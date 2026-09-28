@@ -1,4 +1,4 @@
-output "postgres-db-server_id" {
+output "postgres-db-server-id" {
   value = azurerm_postgresql_flexible_server.application_db_server.id
 }
 

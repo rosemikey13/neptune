@@ -75,6 +75,8 @@ resource "azurerm_linux_virtual_machine" "application_name" {
   resource_group_name = var.rg_name
   name = "${var.application_name}-vm"
   location = var.vn_location
+  priority = var.spot_instance ? "Spot" : "Regular"
+  eviction_policy = var.spot_instance ? "Delete" : null
   network_interface_ids = [azurerm_network_interface.application_ni.id]
   admin_username = var.linux_admin
   size = var.vm_size
