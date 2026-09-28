@@ -6,7 +6,8 @@
 **/.terraform
 **/hosts
 **/ansible/*/vars/*
-**/combined.pem
+**/*.pem
+**/*.crt
 **/db_vars.yaml
 **/app_vars.yaml
 **/Jenkinsfile

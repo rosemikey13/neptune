@@ -24,8 +24,7 @@
 - name: Download and unpack Artifactory
   hosts: artifactory
   vars_files:
-    - ../artifactoryDB/db_vars.yaml
-    - vars/playbook_vars.yaml
+    - db_vars.yaml
   tasks:
     - name: Make Artifactory installation directory
       ansible.builtin.command:
@@ -47,7 +46,7 @@
     - name: Get Artifactory linux archive
       ansible.builtin.get_url:
         dest: /usr/local/jfrog/artifactory.tar.gz
-        url: https://releases.jfrog.io/artifactory/bintray-artifactory/org/artifactory/jcr/jfrog-artifactory-jcr/{{artifactory_version}}/jfrog-artifactory-jcr-{{artifactory_version}}-linux.tar.gz
+        url: https://releases.jfrog.io/artifactory/bintray-artifactory/org/artifactory/jcr/jfrog-artifactory-jcr/7.161.26/jfrog-artifactory-jcr-7.161.26-linux.tar.gz
         decompress: false
       become: yes
 
@@ -60,12 +59,12 @@
 - name: Artifactory DB Setup
   hosts: artifactory
   vars_files:
-    - ../artifactoryDB/db_vars.yaml
+    - db_vars.yaml
   tasks:
 
     - name: Copy pem file
       ansible.builtin.copy:
-        src: ../artifactoryDB/misc/combined.pem
+        src: ../artifactorydb/misc/combined.pem
         dest: /usr/local/jfrog/combined.pem
       become: yes
 

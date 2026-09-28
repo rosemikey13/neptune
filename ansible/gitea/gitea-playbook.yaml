@@ -25,7 +25,7 @@
 - name: Download and unpack gitea
   hosts: gitea
   vars_files:
-    - ../giteaDB/db_vars.yaml
+    - db_vars.yaml
     - vars/playbook_vars.yaml
   tasks:
     - name: Make gitea installation directory

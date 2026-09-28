@@ -6,6 +6,9 @@ variable "rg_name" {}
 variable "my_ip" {}
 variable "linux_admin" {}
 variable "vm_size" {
-default = "Standard_D4alds_v7"
+    default = "Standard_D4alds_v7"
+}
+variable "spot_instance" {
+    default = false
 }
 variable "ssh_pub_key_absolute_path" {}

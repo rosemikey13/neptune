@@ -61,12 +61,12 @@ resource "azurerm_subnet_network_security_group_association" "application_db_net
 }
 
 resource "azurerm_private_dns_zone" "application_db_private_dns_zone" {
-  name = "artifactory-db.postgres.database.azure.com"
+  name = "${var.application_name}.postgres.database.azure.com"
   resource_group_name = var.rg_name
 }
 
 resource "azurerm_private_dns_zone_virtual_network_link" "application_db_private_dns_zone_virtual_network_link" {
-  name = "${var.application_name}-db.postgres.database.azure.com"
+  name = "${var.application_name}.postgres.database.azure.com"
   private_dns_zone_id = azurerm_private_dns_zone.application_db_private_dns_zone.id
   virtual_network_id  = var.vn_id
   depends_on          = [azurerm_subnet.application_db_subnet]
@@ -86,8 +86,7 @@ resource "azurerm_postgresql_flexible_server" "application_db_server" {
   public_network_access_enabled = false
   delegated_subnet_id = azurerm_subnet.application_db_subnet.id
   private_dns_zone_id = azurerm_private_dns_zone.application_db_private_dns_zone.id
-
-
+ 
 
   authentication {
     password_auth_enabled = true
@@ -109,7 +108,7 @@ resource "azurerm_postgresql_flexible_server" "application_db_server" {
 }
 
 resource "azurerm_postgresql_flexible_server_firewall_rule" "application_db_server_firewall_rule" {
-  name             = "${var.application_name}-db-server-firewall-rule"
+  name             = "${var.application_name}-server-firewall-rule"
   server_id        = azurerm_postgresql_flexible_server.application_db_server.id
   start_ip_address = var.application_private_ip
   end_ip_address   = var.application_private_ip
@@ -120,7 +119,7 @@ resource "azurerm_postgresql_flexible_server_database" "application_db" {
   server_id = azurerm_postgresql_flexible_server.application_db_server.id
   collation = "en_US.utf8"
   charset   = "UTF8"
-
+  
 
   provisioner "local-exec" {
     command = "echo 'DB_NAME: ${var.db_name}' > ansible/${var.application_name}/db_vars.yaml"

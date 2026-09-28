@@ -1,12 +1,15 @@
-variable "application_subnet_cidr_block" {}
+variable "db_subnet_cidr_block" {}
 variable "vn_name" {}
 variable "vn_location" {}
 variable "application_name" {}
 variable "rg_name" {}
 variable "my_ip" {}
 variable "linux_admin" {}
-variable "application_ip" {}
+variable "application_private_ip" {}
 variable "psql_admin" {}
 variable "psql_password" {}
 variable "db_name" {}
 variable "ssh_pub_key_absolute_path" {}
+variable "spot_instance" {
+    default = false
+}
