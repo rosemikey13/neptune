@@ -12,3 +12,4 @@ variable "my_ip" {}
 variable "linux_admin" {}
 variable "ssh_pub_key_absolute_path" {}
 variable "op_mode" {}
+variable "monitoring_ip" {}

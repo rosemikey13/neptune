@@ -1,0 +1,123 @@
+- name: Wait for server to be ready
+  hosts: prometheus
+  gather_facts: false
+  vars:
+    ansible_connection: local
+  tasks:
+    - name: Wait for ssh port open
+      ansible.builtin.wait_for:
+        port: 22
+        delay: 15
+        timeout: 75
+        search_regex: OpenSSH
+        host: '{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}'
+        
+    
+- name: Update apt
+  hosts: prometheus
+  tasks:
+    - name: Make keyring directory
+      ansible.builtin.command:
+        cmd: mkdir -p /etc/apt/keyrings
+      become: yes
+    
+    - name: Get Grafana keyring
+      ansible.builtin.get_url:
+        dest: /etc/apt/keyrings/grafana.asc
+        url: https://apt.grafana.com/gpg-full.key
+        mode: '644'
+        decompress: false
+      become: yes
+    
+    - name: Add Grafana repo
+      ansible.builtin.shell:
+        cmd: echo "deb [signed-by=/etc/apt/keyrings/grafana.asc] https://apt.grafana.com stable main" | sudo tee -a /etc/apt/sources.list.d/grafana.list
+      become: yes
+    
+    - name: Install prerequisites
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 4000
+        name:
+         - gnupg
+         - apt-transport-https
+         - wget
+      become: yes
+
+- name: Prometheus setup
+  hosts: localhost
+  tasks:
+    - name: Generate prometheus.yml
+      ansible.builtin.command:
+        cmd: go run ./misc/generate_monitoring_config.go
+
+
+- name: Download and unpack Prometheus
+  hosts: prometheus
+  tasks:
+    - name: Make Prometheus installation directory
+      ansible.builtin.command:
+        cmd: mkdir -p /usr/local/prometheus
+      become: yes
+    
+    - name: Get Prometheus linux archive
+      ansible.builtin.get_url:
+        dest: /usr/local/prometheus/prometheus.tar.gz
+        url: https://github.com/prometheus/prometheus/releases/download/v3.13.3/prometheus-3.13.3.linux-amd64.tar.gz
+        decompress: false
+      become: yes
+
+    - name: Extract archive
+      ansible.builtin.command:
+        chdir: /usr/local/prometheus
+        cmd: tar --extract --verbose --gzip --file=prometheus.tar.gz --strip-components=1
+      become: yes
+
+    - name: Copy prometheus.yml
+      ansible.builtin.copy:
+        dest: /usr/local/prometheus/prometheus.yml
+        src: ./prometheus.yml
+      become: yes
+    
+    - name: Copy start_prom
+      ansible.builtin.copy:
+        dest: /usr/local/prometheus/start_prom
+        src: ./misc/start_prom
+        mode: '777'
+      become: yes
+    
+    - name: Start Prometheus
+      ansible.builtin.command:
+        chdir: /usr/local/prometheus
+        cmd: ./start_prom
+      become: yes
+
+    - name: Install Grafana
+      ansible.builtin.apt:
+        update_cache: yes
+        name:
+         - grafana
+      become: yes
+    
+    - name: Copy prom_source.yaml
+      ansible.builtin.copy:
+        dest: /etc/grafana/provisioning/datasources/prom_source.yaml
+        src: ./misc/prom_source.yaml
+      become: yes
+    
+    - name: Copy neptune dashboard file
+      ansible.builtin.copy:
+        dest: /etc/grafana/neptune_dashboard.json
+        src: ./misc/neptune_dashboard.json
+      become: yes
+    
+    - name: Copy  Copy neptune dashboard config file
+      ansible.builtin.copy:
+        dest: /etc/grafana/provisioning/dashboards/neptune_dashboard.yaml
+        src: ./misc/neptune_dashboard.yaml
+      become: yes
+    
+    - name: Start Grafana
+      ansible.builtin.command:
+        cmd: service grafana-server start
+      become: yes

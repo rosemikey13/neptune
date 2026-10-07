@@ -15,6 +15,7 @@ module "postgres-flexible-db" {
 
 module "postgres-vm-db" {
     count = var.op_mode == "development" ? 1 : var.op_mode == "regular" ? 1 : 0
+    monitoring_ip = var.monitoring_ip
     source = "../postgres-vm-db"
     application_private_ip = var.application_private_ip
     application_name = var.application_name

@@ -12,3 +12,6 @@ variable "spot_instance" {
     default = false
 }
 variable "ssh_pub_key_absolute_path" {}
+variable "monitoring_ip" {
+    default = ""
+}
