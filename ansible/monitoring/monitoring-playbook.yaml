@@ -1,5 +1,5 @@
 - name: Wait for server to be ready
-  hosts: prometheus
+  hosts: monitoring
   gather_facts: false
   vars:
     ansible_connection: local
@@ -14,7 +14,7 @@
         
     
 - name: Update apt
-  hosts: prometheus
+  hosts: monitoring
   tasks:
     - name: Make keyring directory
       ansible.builtin.command:
@@ -53,7 +53,7 @@
 
 
 - name: Download and unpack Prometheus
-  hosts: prometheus
+  hosts: monitoring
   tasks:
     - name: Make Prometheus installation directory
       ansible.builtin.command:

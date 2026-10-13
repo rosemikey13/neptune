@@ -13,3 +13,4 @@
 **/Jenkinsfile
 **/prometheus.yml
 **/grafana.ini
+**/*.log

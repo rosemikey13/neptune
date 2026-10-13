@@ -2,7 +2,7 @@
 <center><img src="./assets/neptune.png" width="600" height="600"></center>
 
 ## Project Description
-Neptune is an Azure-based project that uses terraform for deployment and hosts an Artifactory container repository, a Gitea git repository, and Jenkins for CI/CD.
+Neptune is an Azure-based project that uses terraform for deployment and hosts an Artifactory container repository, a Gitea git repository, and Jenkins for CI/CD. System metrics via Prometheus are viewable from a pre-configured Grafana dashboard.
 
 ## Important Notes
 - When using the budget version of the project, be aware that you will have to request a quota increase for 12 spot instance Vcpus in US-East 2. 
@@ -14,6 +14,8 @@ Neptune is an Azure-based project that uses terraform for deployment and hosts a
 - Jfrog Artifactory (JCR)
 - Microsoft Azure
 - Gitea
+- Prometheus
+- Grafana
 - Jenkins
 
 ## Requirements
@@ -21,7 +23,7 @@ Neptune is an Azure-based project that uses terraform for deployment and hosts a
 - Install Azure CLI ([Installation Instructions](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest))
 - Install Terraform ([Installation Instructions](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli))
 - Install Ansible ([Installation Instructions](https://docs.ansible.com/projects/ansible/latest/installation_guide/intro_installation.html))
-
+- Install Go ([Installation Instructions](https://go.dev/doc/install))
 ## Setup
 1. Sign in to your azure account
 2. Create azure neptune project invoice section ([Instructions](https://learn.microsoft.com/en-us/azure/cost-management-billing/manage/mca-section-invoice#create-a-new-invoice-section))
@@ -51,25 +53,11 @@ Neptune is an Azure-based project that uses terraform for deployment and hosts a
 
 5. Rename `terraform.tfvars.example` to `terraform.tfvars`
 
-6. Run `terraform apply` and respond to the prompt `Do you want to perform these actions?` with `yes`
+6. Run `go run main.go`
 
-7. Wait for terraform to provision and the ansible script to complete (Usually takes around 6 minutes)
+7. Console output at the end of the command will give the IP addresses where the services can be accessed.
 
-8. Use the IP Address found in `neptune > ansible > hosts` under the `[artifactory]` section to access the vm on port 8082 (e.g. 10.0.1.4:8082) in a browser to access Artifactory.
-
-9. Complete the initial Artifactory setup.
-   <font color="#ee4949">**IMPORTANT</font>: The Default username is `admin` and the default password is `password`. MAKE SURE THE DEFAULT PASSWORD IS CHANGED WHEN PROMPTED IN THE INITIAL SETUP.**
-
-10. To activate Jenkins look for console output with the following message and follow the instructions: 
-
-        - "**************************************************************************************"
-        - "********************************** ! IMPORTANT ! *************************************"
-        - "********************************* ACTIVATE JENKINS BY ********************************" 
-        - "* Entering this password: '{{setup_password.stdout}}' at http://{{VM_ENDPOINT}}:8080 *"
-        - "**************************************************************************************"
-        - "**************************************************************************************" 
-
-11. You now have a Docker container repository that only you can access!
+8. Jenkins will have to be unlocked at its IP address using the code in the command output.
 
 ## Operation Modes
 Neptune can be started in the following operation modes:

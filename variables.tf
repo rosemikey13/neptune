@@ -36,7 +36,7 @@ variable "jenkins_subnet_cidr_block" {
   default = "10.0.5.0/24"
 }
 
-variable "prometheus_subnet_cidr_block" {
+variable "monitoring_subnet_cidr_block" {
   default = "10.0.6.0/24"
 }
 
