@@ -16,13 +16,14 @@ Neptune is an Azure-based project that uses terraform for deployment and hosts a
 - Gitea
 - Prometheus
 - Grafana
+- Jenkins
 
 ## Requirements
 - Create or Sign into Azure Account
 - Install Azure CLI ([Installation Instructions](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest))
 - Install Terraform ([Installation Instructions](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli))
 - Install Ansible ([Installation Instructions](https://docs.ansible.com/projects/ansible/latest/installation_guide/intro_installation.html))
-
+- Install Go ([Installation Instructions](https://go.dev/doc/install))
 ## Setup
 1. Sign in to your azure account
 2. Create azure neptune project invoice section ([Instructions](https://learn.microsoft.com/en-us/azure/cost-management-billing/manage/mca-section-invoice#create-a-new-invoice-section))
