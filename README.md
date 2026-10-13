@@ -2,7 +2,7 @@
 <center><img src="./assets/neptune.png" width="600" height="600"></center>
 
 ## Project Description
-Neptune is an Azure-based project that uses terraform for deployment and hosts an Artifactory container repository, a Gitea git repository, and Jenkins for CI/CD.
+Neptune is an Azure-based project that uses terraform for deployment and hosts an Artifactory container repository, a Gitea git repository, and Jenkins for CI/CD. System metrics via Prometheus are viewable from a pre-configured Grafana dashboard.
 
 ## Important Notes
 - When using the budget version of the project, be aware that you will have to request a quota increase for 12 spot instance Vcpus in US-East 2. 
@@ -14,6 +14,8 @@ Neptune is an Azure-based project that uses terraform for deployment and hosts a
 - Jfrog Artifactory (JCR)
 - Microsoft Azure
 - Gitea
+- Prometheus
+- Grafana
 
 ## Requirements
 - Create or Sign into Azure Account

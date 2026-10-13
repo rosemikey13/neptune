@@ -34,13 +34,13 @@ module "artifactory_vm" {
   vn_location = azurerm_virtual_network.neptune_vn.location
   ssh_pub_key_absolute_path = var.ssh_pub_key_absolute_path
   spot_instance = var.op_mode == "development" ? true : false
-  monitoring_ip = module.prometheus_vm.application_public_ip_address
-  depends_on = [ module.prometheus_vm ]
+  monitoring_ip = module.monitoring_vm.application_public_ip_address
+  depends_on = [ module.monitoring_vm ]
 }
 
 module "artifactory_db" {
   source = "./modules/postgres-db"
-  monitoring_ip = module.prometheus_vm.application_public_ip_address
+  monitoring_ip = module.monitoring_vm.application_public_ip_address
   op_mode = var.op_mode
   application_name = var.artifactory_db_application_name
   application_private_ip = module.artifactory_vm.application_private_ip_address
@@ -55,12 +55,12 @@ module "artifactory_db" {
   vn_id = azurerm_virtual_network.neptune_vn.id
   vn_location = azurerm_virtual_network.neptune_vn.location
   vn_name = azurerm_virtual_network.neptune_vn.name
-  depends_on = [ module.prometheus_vm ]
+  depends_on = [ module.monitoring_vm ]
 }
 
 module "gitea_vm" {
   source = "./modules/linux-VM"
-  monitoring_ip = module.prometheus_vm.application_public_ip_address
+  monitoring_ip = module.monitoring_vm.application_public_ip_address
   application_name = var.gitea_vm_application_name
   application_subnet_cidr_block = var.gitea_subnet_cidr_block
   linux_admin = var.linux_admin
@@ -70,12 +70,12 @@ module "gitea_vm" {
   vn_location = azurerm_virtual_network.neptune_vn.location
   vm_size = "Standard_D2alds_v7"
   ssh_pub_key_absolute_path = var.ssh_pub_key_absolute_path
-  depends_on = [ module.artifactory_vm, module.prometheus_vm ]
+  depends_on = [ module.artifactory_vm, module.monitoring_vm ]
 }
 
 module "gitea_db" {
   source = "./modules/postgres-db"
-  monitoring_ip = module.prometheus_vm.application_public_ip_address
+  monitoring_ip = module.monitoring_vm.application_public_ip_address
   op_mode = var.op_mode
   application_name = var.gitea_db_application_name
   application_private_ip = module.gitea_vm.application_private_ip_address
@@ -90,7 +90,7 @@ module "gitea_db" {
   vn_id = azurerm_virtual_network.neptune_vn.id
   vn_location = azurerm_virtual_network.neptune_vn.location
   vn_name = azurerm_virtual_network.neptune_vn.name
-  depends_on = [ module.prometheus_vm ]
+  depends_on = [ module.monitoring_vm ]
 }
 
 resource "azurerm_postgresql_flexible_server_configuration" "gitea_azure_db_config_1" {
@@ -102,7 +102,7 @@ resource "azurerm_postgresql_flexible_server_configuration" "gitea_azure_db_conf
 
 module "jenkins_vm" {
   source = "./modules/linux-VM"
-  monitoring_ip = module.prometheus_vm.application_public_ip_address
+  monitoring_ip = module.monitoring_vm.application_public_ip_address
   application_name = "jenkins"
   application_subnet_cidr_block = var.jenkins_subnet_cidr_block
   linux_admin = var.linux_admin
@@ -129,11 +129,11 @@ resource "null_resource" "jenkins_playbook_runner" {
   depends_on = [ module.jenkins_vm, null_resource.jenkins_setup, null_resource.artifactory_db_runner, null_resource.gitea_db_runner, null_resource.gitea_playbook_runner, null_resource.artifactory_playbook_runner]
 }
 
-module "prometheus_vm" {
+module "monitoring_vm" {
   source = "./modules/linux-VM"
-  monitoring_ip = module.prometheus_vm.application_public_ip_address
-  application_name = "prometheus"
-  application_subnet_cidr_block = var.prometheus_subnet_cidr_block
+  monitoring_ip = module.monitoring_vm.application_public_ip_address
+  application_name = "monitoring"
+  application_subnet_cidr_block = var.monitoring_subnet_cidr_block
   linux_admin = var.linux_admin
   rg_name = azurerm_resource_group.neptune_rg.name
   my_ip = var.my_ip
@@ -143,18 +143,18 @@ module "prometheus_vm" {
   ssh_pub_key_absolute_path = var.ssh_pub_key_absolute_path  
 }
 
-resource "null_resource" "prometheus_setup" {
+resource "null_resource" "monitoring_setup" {
   provisioner "local-exec" {
-    command = "echo VM_ENDPOINT: ${module.jenkins_vm.application_public_ip_address} > ${var.project_path}/ansible/prometheus/vars/app_vars.yaml"
+    command = "echo VM_ENDPOINT: ${module.jenkins_vm.application_public_ip_address} > ${var.project_path}/ansible/monitoring/vars/app_vars.yaml"
   }
-  depends_on = [module.prometheus_vm]
+  depends_on = [module.monitoring_vm]
 }
 
-resource "null_resource" "prometheus_playbook_runner" {
+resource "null_resource" "monitoring_playbook_runner" {
   provisioner "local-exec" {
-    command = "ansible-playbook -i ${var.project_path}/ansible/prometheus/hosts ${var.project_path}/ansible/prometheus/prometheus-playbook.yaml"
+    command = "ansible-playbook -i ${var.project_path}/ansible/monitoring/hosts ${var.project_path}/ansible/monitoring/monitoring-playbook.yaml"
   }
-  depends_on = [ null_resource.prometheus_setup, null_resource.jenkins_playbook_runner ]
+  depends_on = [ null_resource.monitoring_setup, null_resource.jenkins_playbook_runner ]
 }
 
 

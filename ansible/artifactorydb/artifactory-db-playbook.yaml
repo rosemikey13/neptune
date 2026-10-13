@@ -76,7 +76,7 @@
     
     - name: Copy run_node_exporter
       ansible.builtin.copy:
-        src: ../prometheus/misc/start_node_exporter
+        src: ../monitoring/misc/start_node_exporter
         dest: /usr/local/prometheus
         mode: '770'
       become: yes
