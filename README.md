@@ -53,25 +53,11 @@ Neptune is an Azure-based project that uses terraform for deployment and hosts a
 
 5. Rename `terraform.tfvars.example` to `terraform.tfvars`
 
-6. Run `terraform apply` and respond to the prompt `Do you want to perform these actions?` with `yes`
+6. Run `go run main.go`
 
-7. Wait for terraform to provision and the ansible script to complete (Usually takes around 6 minutes)
+7. Console output at the end of the command will give the IP addresses where the services can be accessed.
 
-8. Use the IP Address found in `neptune > ansible > hosts` under the `[artifactory]` section to access the vm on port 8082 (e.g. 10.0.1.4:8082) in a browser to access Artifactory.
-
-9. Complete the initial Artifactory setup.
-   <font color="#ee4949">**IMPORTANT</font>: The Default username is `admin` and the default password is `password`. MAKE SURE THE DEFAULT PASSWORD IS CHANGED WHEN PROMPTED IN THE INITIAL SETUP.**
-
-10. To activate Jenkins look for console output with the following message and follow the instructions: 
-
-        - "**************************************************************************************"
-        - "********************************** ! IMPORTANT ! *************************************"
-        - "********************************* ACTIVATE JENKINS BY ********************************" 
-        - "* Entering this password: '{{setup_password.stdout}}' at http://{{VM_ENDPOINT}}:8080 *"
-        - "**************************************************************************************"
-        - "**************************************************************************************" 
-
-11. You now have a Docker container repository that only you can access!
+8. Jenkins will have to be unlocked at its IP address using the code in the command output.
 
 ## Operation Modes
 Neptune can be started in the following operation modes:
